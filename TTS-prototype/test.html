@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ElevenLabs TTS Test</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        margin: 2rem;
+        max-width: 720px;
+      }
+      label {
+        display: block;
+        margin: 0.75rem 0 0.25rem;
+        font-weight: 600;
+      }
+      input,
+      textarea {
+        width: 100%;
+        padding: 0.5rem;
+        font-size: 1rem;
+      }
+      button {
+        margin-top: 1rem;
+        padding: 0.6rem 1rem;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+      #screen {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid #ddd;
+        background: #fafafa;
+        min-height: 3rem;
+        font-size: 1.1rem;
+      }
+      #status {
+        margin-top: 0.5rem;
+        color: #555;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ElevenLabs TTS Test</h1>
+
+    <label for="name">Speaker name</label>
+    <input id="name" type="text" value="Matilda" />
+
+    <label for="text">Text</label>
+    <textarea id="text" rows="4">Hello there.</textarea>
+
+    <button id="speak">Speak</button>
+
+    <div id="screen"></div>
+    <div id="status"></div>
+
+    <script>
+      const nameEl = document.getElementById("name");
+      const textEl = document.getElementById("text");
+      const screenEl = document.getElementById("screen");
+      const statusEl = document.getElementById("status");
+
+      async function speak() {
+        const name = nameEl.value.trim();
+        const text = textEl.value.trim();
+        if (!text) return;
+
+        screenEl.textContent = name ? `${name}: ${text}` : text;
+        statusEl.textContent = "Requesting audio...";
+
+        const res = await fetch("http://127.0.0.1:8000/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, text }),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          statusEl.textContent = `Error: ${errText}`;
+          return;
+        }
+
+        const blob = await res.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+        statusEl.textContent = "Playing...";
+        audio.onended = () => {
+          statusEl.textContent = "Done.";
+          URL.revokeObjectURL(audio.src);
+        };
+        audio.play();
+      }
+
+      document.getElementById("speak").addEventListener("click", speak);
+    </script>
+  </body>
+</html>
